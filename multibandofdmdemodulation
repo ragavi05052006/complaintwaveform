@@ -1,0 +1,54 @@
+clc;
+clear all;
+close all;
+
+num_subcarriers = 64;
+num_symbols = 100;
+oversampling_factor = 4;
+sampling_rate = 1e6;
+symbol_rate = 10e3;
+snr_db = 20;
+
+qpsk_symbols = randi([0, 3], num_subcarriers, num_symbols);
+qpsk_symbols = exp(1j * pi / 2 * qpsk_symbols);
+
+time_domain_waveform = ifft(qpsk_symbols, num_subcarriers) * sqrt(num_subcarriers);
+
+cp_length = 16;
+cp = time_domain_waveform(end - cp_length + 1:end, :);
+time_domain_waveform_with_cp = [cp; time_domain_waveform];
+
+tx_waveform = upsample(time_domain_waveform_with_cp, oversampling_factor);
+
+noise_power = 10^(-snr_db / 10);
+noise = sqrt(noise_power / 2) * (randn(size(tx_waveform)) + 1j * randn(size(tx_waveform)));
+
+rx_waveform = tx_waveform + noise;
+
+rx_waveform_downsampled = downsample(rx_waveform, oversampling_factor);
+
+rx_waveform_no_cp = rx_waveform_downsampled(cp_length + 1:end, :);
+
+rx_freq_symbols = fft(rx_waveform_no_cp, num_subcarriers);
+
+rx_qpsk_symbols = angle(rx_freq_symbols);
+
+subcarrier_index = 1;
+
+subplot(2, 1, 1);
+plot(real(rx_freq_symbols(:)), imag(rx_freq_symbols(:)), 'o');
+title('Received Symbols (Frequency Domain)');
+xlabel('Real Part');
+ylabel('Imaginary Part');
+grid on;
+
+subplot(2, 1, 2);
+plot(1:num_symbols, rx_qpsk_symbols(subcarrier_index, :), 'o');
+title(['Demodulated QPSK Symbols (Subcarrier ', num2str(subcarrier_index), ')']);
+xlabel('Symbol Index');
+ylabel('Phase Angle (radians)');
+grid on;
+
+figure_title = 'Multiband OFDM Demodulation';
+h = suptitle(figure_title);
+set(h, 'FontSize', 14);
