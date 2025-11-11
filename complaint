@@ -1,0 +1,48 @@
+clc;
+clear all;
+close all;
+
+carrierFrequency = 3.5e9;
+sampleRate = 30.72e6;
+numSamples = 1024;
+snr = 20;
+
+data = randi([0 1], 2, numSamples);
+qpskSymbols = 2 * data - 1;
+
+time = (0:numSamples - 1) / sampleRate;
+
+qpskSignal = qpskSymbols(1, :) + 1j * qpskSymbols(2, :);
+
+carrierSignal = exp(1j * 2 * pi * carrierFrequency * time);
+
+transmittedSignal = qpskSignal .* carrierSignal;
+
+noisySignal = awgn(transmittedSignal, snr, 'measured');
+
+receivedSignal = noisySignal ./ carrierSignal;
+
+demodulatedSymbols = angle(receivedSignal);
+
+decodedData = demodulatedSymbols > 0;
+
+subplot(3, 1, 1);
+plot(time, real(transmittedSignal));
+title('Transmitted Signal (I Component)');
+xlabel('Time (s)');
+ylabel('Amplitude');
+
+subplot(3, 1, 2);
+plot(time, real(noisySignal));
+title('Received Signal with Noise');
+xlabel('Time (s)');
+ylabel('Amplitude');
+
+subplot(3, 1, 3);
+stem(data(:), 'rx');
+hold on;
+stem(decodedData(:), 'bo');
+title('Transmitted and Decoded Data');
+xlabel('Sample Index');
+ylabel('Bit Value');
+legend('Transmitted Data', 'Decoded Data');
