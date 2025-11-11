@@ -1,0 +1,32 @@
+clc;
+clear all;
+close all;
+
+infoLength = 16;
+crcLength = 8;
+
+infoBits = randi([0, 1], infoLength, 1);
+
+polarCode = nrPolarCode(infoLength, infoLength + crcLength);
+
+codeword = nrPolarEncode(infoBits, polarCode);
+
+crc = comm.CRCGenerator('Polynomial', 'z^8 + z^2 + 1');
+crcBits = crc(codeword);
+
+receivedCodeword = awgn(codeword, 10);
+
+decodedInfoBits = nrPolarDecode(receivedCodeword, polarCode, crc);
+
+crcDetector = comm.CRCDetector('Polynomial', 'z^8 + z^2 + 1');
+isCRCValid = crcDetector(receivedCodeword);
+
+disp('Transmitted Information Bits:');
+disp(infoBits.');
+disp('Received Information Bits:');
+disp(decodedInfoBits.');
+if isCRCValid
+disp('CRC Check: Passed (Decoded information is correct).');
+else
+disp('CRC Check: Failed (Decoded information has errors).');
+end
