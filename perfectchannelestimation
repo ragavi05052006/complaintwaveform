@@ -1,0 +1,45 @@
+clc;
+clear all;
+close all;
+
+num_antennas = 4;
+num_symbols = 100;
+snr_db = 20;
+
+H_true = (randn(num_antennas, num_antennas) + 1i * randn(num_antennas, num_antennas)) / sqrt(2);
+
+symbols = randi([0, 1], num_antennas, num_symbols);
+
+modulated_symbols = 2 * symbols - 1;
+
+received_symbols = H_true * modulated_symbols;
+
+noise_power = 10^(-snr_db / 10);
+noise = sqrt(noise_power/2) * (randn(num_antennas, num_symbols) + 1i * randn(num_antennas, num_symbols));
+received_symbols_with_noise = received_symbols + noise;
+
+estimated_H = received_symbols_with_noise * pinv(modulated_symbols);
+
+mse = mean(mean(abs(H_true - estimated_H).^2, 'omitnan'));
+
+disp(['Mean Squared Error: ', num2str(mse)]);
+
+subplot(1, 2, 1);
+imagesc(abs(H_true));
+colormap('hot');
+colorbar;
+title('True Channel Matrix');
+xlabel('Transmit Antennas');
+ylabel('Receive Antennas');
+
+subplot(1, 2, 2);
+imagesc(abs(estimated_H));
+colormap('hot');
+colorbar;
+title('Estimated Channel Matrix');
+xlabel('Transmit Antennas');
+ylabel('Receive Antennas');
+
+figure_title = '5G Perfect Channel Estimation';
+h = suptitle(figure_title);
+set(h, 'FontSize', 14);
