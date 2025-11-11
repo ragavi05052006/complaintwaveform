@@ -1,0 +1,52 @@
+clc;
+clear all;
+close all;
+
+fs = 30.72e6;
+Tc = 1/4.6e6;
+Ts = 1/30.72e6;
+
+N_id_1 = 0;
+n = 0:127;
+pss = exp(1j * pi * N_id_1 * (n.*(n+1)/2));
+
+N_id_2 = 0;
+m = 0:31;
+sss = exp(1j * pi * N_id_2 * m);
+
+n_burst = 0:255;
+pss_sequence = repmat(pss, 1, length(n_burst)/length(pss));
+sss_sequence = repmat(sss, 1, length(n_burst)/length(sss));
+
+pss_burst = pss_sequence .* exp(1j * 2 * pi * n_burst * Tc / Ts);
+sss_burst = sss_sequence .* exp(1j * 2 * pi * n_burst * Tc / Ts);
+
+figure;
+subplot(2,1,1);
+plot(n_burst, abs(pss_burst));
+title('Primary Synchronization Signal Burst');
+xlabel('Sample Index');
+ylabel('Amplitude');
+
+subplot(2,1,2);
+plot(n_burst, abs(sss_burst));
+title('Secondary Synchronization Signal Burst');
+xlabel('Sample Index');
+ylabel('Amplitude');
+
+received_signal = awgn(pss_burst + sss_burst, 10);
+
+correlation_pss = abs(xcorr(received_signal, pss_burst));
+figure;
+subplot(2,1,1);
+plot(correlation_pss);
+title('Correlation with Primary Synchronization Signal');
+xlabel('Sample Index');
+ylabel('Correlation');
+
+correlation_sss = abs(xcorr(received_signal, sss_burst));
+subplot(2,1,2);
+plot(correlation_sss);
+title('Correlation with Secondary Synchronization Signal');
+xlabel('Sample Index');
+ylabel('Correlation');
